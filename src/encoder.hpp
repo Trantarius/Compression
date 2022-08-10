@@ -23,9 +23,22 @@ struct MultiEncoder:public Encoder{
     }
     bloc encode(bloc data){
         bloc tmp;
-        for(int n=num_encoders-1;n>0;n--){
+        data=encoders[num_encoders-1]->encode(data);
+        for(int n=num_encoders-2;n>0;n--){
             tmp=encoders[n]->encode(data);
             data.destroy();
+            data=tmp;
         }
+        return data;
+    }
+    bloc decode(bloc data){
+        bloc tmp;
+        data=encoders[0]->decode(data);
+        for(int n=1;n<num_encoders;n++){
+            tmp=encoders[n]->decode(data);
+            data.destroy();
+            data=tmp;
+        }
+        return data;
     }
 };
