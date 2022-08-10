@@ -1,5 +1,5 @@
  
-g++ -std=c++17 $(find src -name "*.cpp") -o exe -IUtil
+g++ -std=c++17 $(find src -name "*.cpp") -o exe
 echo
 echo compiled
 echo
