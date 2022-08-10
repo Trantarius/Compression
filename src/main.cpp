@@ -1,3 +1,6 @@
  
-#include "Util/util.hpp"
+#include "util.hpp"
 
+int main(){
+    print("hi");
+}
