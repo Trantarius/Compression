@@ -1,4 +1,8 @@
 #pragma once
 #include "../Util/util.hpp"
+#include "encoder.hpp"
 
-bloc runlen_compress
+struct RunLenEncoder{
+    bloc encode(bloc data);
+    bloc decode(bloc data);
+};
