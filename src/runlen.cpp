@@ -45,7 +45,7 @@ bloc RunLenEncoder::decode(bloc data){
     SerialData<bool,u64> compdata(data);
     if(!compdata.meta<0>()){
         //data is actually uncompressed
-        return bloc::copy(compdata.section(0));
+        return bloc::copy_of(compdata.section(0));
     }
 
     bloc ret(compdata.meta<1>());

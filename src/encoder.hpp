@@ -46,9 +46,9 @@ struct MultiEncoder:public Encoder{
 //closest possible thing to a valid 'no change' encoder
 struct CopyEncoder:public Encoder{
     bloc encode(bloc data){
-        return bloc::copy(data);
+        return bloc::copy_of(data);
     }
     bloc decode(bloc data){
-        return bloc::copy(data);
+        return bloc::copy_of(data);
     }
 };
