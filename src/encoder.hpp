@@ -11,9 +11,9 @@ struct MultiEncoder:public Encoder{
     Encoder** encoders;
     size_t num_encoders;
     template<typename...Ts>
-    MultiEncoder(Ts*...args){
-        num_encoders=sizeof...(Ts);
-        encoders=new Encoder*[sizeof...(Ts)]{args...};
+    MultiEncoder(Encoder* a,Ts*...args){
+        num_encoders=sizeof...(Ts)+1;
+        encoders=new Encoder*[sizeof...(Ts)+1]{a,args...};
     }
     ~MultiEncoder(){
         for(size_t n=0;n<num_encoders;n++){
@@ -40,5 +40,15 @@ struct MultiEncoder:public Encoder{
             data=tmp;
         }
         return data;
+    }
+};
+
+//closest possible thing to a valid 'no change' encoder
+struct CopyEncoder:public Encoder{
+    bloc encode(bloc data){
+        return bloc::copy(data);
+    }
+    bloc decode(bloc data){
+        return bloc::copy(data);
     }
 };
