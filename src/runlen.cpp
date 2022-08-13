@@ -2,30 +2,31 @@
 #include "serial.hpp"
 
 bloc RunLenEncoder::encode(bloc data){
-    SerialData<bool> compdata(data.size);
+    SerialData<bool,u64> compdata(data.size);
+    compdata.meta<1>()=data.size;//uncompressed size, may differ from SerialData's own size record
     bloc comp=compdata.section(0);
 
     size_t r_i=0;
-    for(size_t r_d=0;r_d<data.size;r_d++){
-        if(r_d<data.size-2 && data[r_d]==data[r_d+1]){
+    for(size_t d_i=0;d_i<data.size;d_i++){
+        if(d_i<data.size-2 && data[d_i]==data[d_i+1]){
             //count number of repeated bytes
             int rlen=2;
-            for(;rlen<255 && r_d+rlen<data.size && data[r_d+rlen]==data[r_d];rlen++);
+            for(;rlen<255 && d_i+rlen<data.size && data[d_i+rlen]==data[d_i];rlen++);
 
             if(r_i>comp.size-3){
                 r_i=0;
                 break;
             }
-            comp[r_i++]=data[r_d];
-            comp[r_i++]=data[r_d];
+            comp[r_i++]=data[d_i];
+            comp[r_i++]=data[d_i];
             comp[r_i++]=rlen;
-            r_d+=rlen;
+            d_i+=rlen;
         }else{
             if(r_i>comp.size-1){
                 r_i=0;
                 break;
             }
-            comp[r_i++]=data[r_d];
+            comp[r_i++]=data[d_i];
         }
     }
 
@@ -38,4 +39,35 @@ bloc RunLenEncoder::encode(bloc data){
 
     compdata.shrink(data.size-r_i);
     return compdata.as_bloc();
+}
+
+bloc RunLenEncoder::decode(bloc data){
+    SerialData<bool,u64> compdata(data);
+    if(!compdata.meta<0>()){
+        //data is actually uncompressed
+        return bloc::copy(compdata.section(0));
+    }
+
+    bloc ret(compdata.meta<1>());
+    bloc comp = compdata.section(0);
+
+    size_t r_i;
+    for(size_t c_i=0;c_i<comp.size;c_i++){
+        if( c_i<comp.size-2 && comp[c_i]==comp[c_i+1] ){
+            if(r_i+comp[c_i+2]>ret.size){
+                throw std::runtime_error("RunLen: uncompressed data too large");
+            }
+            for(size_t n=0;n<comp[c_i+2];n++){
+                ret[r_i++]=comp[c_i];
+            }
+            c_i+=2;
+        }else{
+            if(r_i>=ret.size){
+                throw std::runtime_error("RunLen: uncompressed data too large");
+            }
+            ret[r_i++]=comp[c_i];
+        }
+    }
+
+    return ret;
 }
