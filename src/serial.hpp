@@ -98,6 +98,7 @@ public:
         }
         sections_start=run;
     }
+    SerialData(bloc dat):SerialData(dat.ptr,dat.size){}
 
     template<size_t N>
     typename std::remove_pointer<typename std::tuple_element<N,decltype(metaptrs)>::type>::type& meta(){
@@ -113,6 +114,11 @@ public:
             off+=section_sizes[i];
         }
         return bloc(sections_start+off,section_sizes[n]);
+    }
+
+    void shrink(size_t amnt){
+        data.size-=amnt;
+        section_sizes[*_num_sections-1]-=amnt;
     }
 
     bloc as_bloc(){
