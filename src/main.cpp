@@ -1,36 +1,44 @@
  
 #include "../Util/util.hpp"
 #include "serial.hpp"
+#include "encoder.hpp"
+#include <filesystem>
+
+using namespace std::filesystem;
 
 int main(){
-    SerialData<int> sd(8,9);
-    print(sd.num_sections());
-    sd.meta<0>() = 99;
-    print(sd.meta<0>());
-    sd.meta<0>() = 77;
-    print(sd.meta<0>());
+    Encoder* enc=new CopyEncoder();
+    Timer timer;
 
-    bloc s0=sd.section(0);
-    for(int n=0;n<s0.size;n++){
-        s0[n]=n;
-    }
-    bloc s0b=sd.section(0);
-    for(int n=0;n<s0b.size;n++){
-        print(s0b[n]);
-    }
-
-    bloc sdb=sd.as_bloc();
-    print("as_bloc");
-
-    SerialData<int> sd2(sdb.ptr,sdb.size);
-    print("constructed");
-
-    print(sd2.meta<0>());
-
-
-
-    s0=sd2.section(0);
-    for(int n=0;n<s0.size;n++){
-        print(s0[n]);
+    directory_iterator dir("Samples");
+    for(const directory_entry& file : dir){
+        if(file.is_regular_file()){
+            timer.start();
+            bloc sample=readfile(file.path());
+            double t=timer.stop();
+            print(file.path());
+            print();
+            print('\t',size_format(sample.size));
+            print('\t',hexstr(sample.hash()));
+            print('\t',Timer::format(t));
+            print();
+            timer.start();
+            bloc comp=enc->encode(sample);
+            t=timer.stop();
+            print('\t',size_format(comp.size));
+            print('\t',hexstr(comp.hash()));
+            print('\t',Timer::format(t));
+            print();
+            timer.start();
+            bloc decomp=enc->decode(comp);
+            t=timer.stop();
+            print('\t',size_format(decomp.size));
+            print('\t',hexstr(decomp.hash()));
+            print('\t',Timer::format(t));
+            print();
+            sample.destroy();
+            comp.destroy();
+            decomp.destroy();
+        }
     }
 }
