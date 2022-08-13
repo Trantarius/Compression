@@ -2,7 +2,7 @@
 #include "serial.hpp"
 
 bloc RunLenEncoder::encode(bloc data){
-    SerialData<bool> compdata=(data.size);
+    SerialData<bool> compdata(data.size);
     bloc comp=compdata.section(0);
 
     size_t r_i=0;
@@ -36,7 +36,6 @@ bloc RunLenEncoder::encode(bloc data){
         return compdata.as_bloc();
     }
 
-    ret.size=r_i;
-
-    return ret;
+    compdata.shrink(data.size-r_i);
+    return compdata.as_bloc();
 }
