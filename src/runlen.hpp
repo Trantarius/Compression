@@ -2,7 +2,7 @@
 #include "../Util/util.hpp"
 #include "encoder.hpp"
 
-struct RunLenEncoder{
+struct RunLenEncoder:public Encoder{
     bloc encode(bloc data);
     bloc decode(bloc data);
 };

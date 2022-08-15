@@ -20,7 +20,7 @@ bloc RunLenEncoder::encode(bloc data){
             comp[r_i++]=data[d_i];
             comp[r_i++]=data[d_i];
             comp[r_i++]=rlen;
-            d_i+=rlen;
+            d_i+=rlen-1;
         }else{
             if(r_i>comp.size-1){
                 r_i=0;
@@ -37,6 +37,7 @@ bloc RunLenEncoder::encode(bloc data){
         return compdata.as_bloc();
     }
 
+    compdata.meta<0>()=true;
     compdata.shrink(data.size-r_i);
     return compdata.as_bloc();
 }
@@ -51,7 +52,7 @@ bloc RunLenEncoder::decode(bloc data){
     bloc ret(compdata.meta<1>());
     bloc comp = compdata.section(0);
 
-    size_t r_i;
+    size_t r_i=0;
     for(size_t c_i=0;c_i<comp.size;c_i++){
         if( c_i<comp.size-2 && comp[c_i]==comp[c_i+1] ){
             if(r_i+comp[c_i+2]>ret.size){

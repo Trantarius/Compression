@@ -119,6 +119,7 @@ public:
     void shrink(size_t amnt){
         data.size-=amnt;
         section_sizes[*_num_sections-1]-=amnt;
+        *(u64*)(data.ptr)-=amnt;
     }
 
     bloc as_bloc(){
