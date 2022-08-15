@@ -8,7 +8,7 @@
 using namespace std::filesystem;
 
 int main(){
-    Encoder* enc=new MultiEncoder(new RunLenEncoder(),new RunLenEncoder());
+    Encoder* enc=new RunLenEncoder();
     Timer timer;
 
     directory_iterator dir("Samples");
