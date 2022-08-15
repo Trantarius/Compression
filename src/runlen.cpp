@@ -1,4 +1,4 @@
-#include "runlen.hpp"
+#include "compressors.hpp"
 #include "serial.hpp"
 
 bloc RunLenEncoder::encode(bloc data){
