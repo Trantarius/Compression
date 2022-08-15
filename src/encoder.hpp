@@ -24,7 +24,7 @@ struct MultiEncoder:public Encoder{
     bloc encode(bloc data){
         bloc tmp;
         data=encoders[num_encoders-1]->encode(data);
-        for(int n=num_encoders-2;n>0;n--){
+        for(int n=num_encoders-2;n>=0;n--){
             tmp=encoders[n]->encode(data);
             data.destroy();
             data=tmp;
