@@ -107,6 +107,8 @@ public:
 
     size_t metadata_size() {return *total_meta_size;}
     size_t num_sections() {return *_num_sections;}
+    size_t total_size() {return data.size;}
+    size_t section_size(size_t n) {return section_sizes[n];}
 
     bloc section(size_t n){
         size_t off=0;

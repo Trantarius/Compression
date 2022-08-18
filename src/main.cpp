@@ -8,7 +8,7 @@
 using namespace std::filesystem;
 
 int main(){
-    Encoder* enc=new RunLenEncoder();
+    Encoder* enc=new HuffmanEncoder();
     Timer timer;
 
     directory_iterator dir("Samples");
@@ -21,7 +21,7 @@ int main(){
 
             print(file.path().c_str());
             print();
-            print("\t",(sample.size));
+            print("\t",size_format(sample.size));
             print("\t",hexstr(sample.hash()));
             print("\t",Timer::format(t));
             print();
@@ -30,7 +30,7 @@ int main(){
             bloc comp=enc->encode(sample);
             t=timer.stop();
 
-            print("\t",(comp.size));
+            print("\t",size_format(comp.size));
             print("\t",hexstr(comp.hash()));
             print("\t",Timer::format(t));
             print();
@@ -39,7 +39,7 @@ int main(){
             bloc decomp=enc->decode(comp);
             t=timer.stop();
 
-            print("\t",(decomp.size));
+            print("\t",size_format(decomp.size));
             print("\t",hexstr(decomp.hash()));
             print("\t",Timer::format(t));
             print();
