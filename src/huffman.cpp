@@ -7,7 +7,7 @@ struct bitstream{
     size_t byte=0;
     uchar bit=0;
     bitstream(){}
-    bitstream(bloc home):home(home){}
+    bitstream(bloc home):home(home),size(home.size*8){}
 
     void next(size_t n=1){
         bit+=n;
@@ -20,20 +20,26 @@ struct bitstream{
     }
 
     bool pop(){
-        bool ret=(home[byte]<<bit)&128;
+        bool ret=(home[byte]>>bit)&1;
         next();
         return ret;
     }
     void set(bool b){
-        home[byte]^=((home[byte]<<bit)&128 ^ ((uchar)b<<7))>>bit;
+        home[byte] ^= (-b ^ home[byte]) & (1UL << (bit));
+        //home[byte]^=((home[byte]<<bit)&128 ^ ((uchar)b<<7))>>bit;
     }
     void push(bool b){
-        home[byte]^=((home[byte]<<bit)&128 ^ ((uchar)b<<7))>>bit;
+        home[byte] ^= (-b ^ home[byte]) & (1UL << (bit));
+        //home[byte]^=((home[byte]<<bit)&128 ^ ((uchar)b<<7))>>bit;
         next();
     }
     void push(bitstream bs){
-        bs.reset();
         for(size_t n=0;n<bs.size;n++){
+            push(bs.pop());
+        }
+    }
+    void push(bitstream bs,size_t count){
+        for(size_t n=0;n<count;n++){
             push(bs.pop());
         }
     }
@@ -43,6 +49,7 @@ struct bitstream{
 struct huffnode{
     enum{STEM,LEAF} mode=LEAF;
     size_t count=0;
+    bool delete_leaf=false;//overrides destroy() behavior
     union{
         huffnode* child[2]{NULL,NULL};
         uchar byte;
@@ -59,6 +66,8 @@ struct huffnode{
                 child[1]->destroy();
             }
             delete this;
+        }else if(delete_leaf){
+            delete this;
         }
     }
     uchar get(bitstream& bs){
@@ -66,6 +75,29 @@ struct huffnode{
             return byte;
         }else{
             return child[(uchar)(bs.pop())]->get(bs);
+        }
+    }
+
+    void serialize(bitstream& target){
+        if(mode==STEM){
+            target.push(false);
+            child[0]->serialize(target);
+            child[1]->serialize(target);
+        }else{
+            target.push(true);
+            target.push(bitstream(bloc(&byte,1)));
+        }
+    }
+
+    static huffnode* deserialize(bitstream& source){
+        if(source.pop()){//ie, next node is a leaf
+            huffnode* ret=new huffnode();
+            ret->delete_leaf=true;
+            bitstream(bloc(&(ret->byte),1)).push(source,8);
+            source.next(8);
+            return ret;
+        }else{//ie, next node is a stem
+            return new huffnode(deserialize(source),deserialize(source));
         }
     }
 };
@@ -77,7 +109,7 @@ bool compare_node(huffnode* a,huffnode* b){
 void flatten_hufftree_r(bitstream* target,huffnode* root,bitstream tracker){
     if(root->mode==huffnode::LEAF){
         target[root->byte].home.copy(tracker.home);
-        target[root->byte].size=tracker.byte*8+tracker.bit;
+        target[root->byte].size=tracker.byte*8+tracker.bit+1;
     }else{
         tracker.next();
         tracker.set(0);
@@ -99,6 +131,22 @@ bitstream* flatten_hufftree(huffnode* root){
     flatten_hufftree_r(target,root->child[1],tracker);
     tracker.home.destroy();
     return target;
+}
+
+u64 hash_hufftree(huffnode* tree){
+    bitstream* flat=flatten_hufftree(tree);
+    bitstream tmp(bloc(1000));
+    for(int n=0;n<256;n++){
+        tmp.push(flat[n]);
+    }
+    bloc small(tmp.home.ptr,tmp.byte);
+    u64 ret=small.hash();
+    tmp.home.destroy();
+    for(int n=0;n<256;n++){
+        flat[n].home.destroy();
+    }
+    delete [] flat;
+    return ret;
 }
 
 bloc HuffmanEncoder::encode(bloc data){
@@ -137,23 +185,17 @@ bloc HuffmanEncoder::encode(bloc data){
     //flatten into a byte->bitstream lookup table
     bitstream* hufftable=flatten_hufftree(root);
 
-    //put hufftable in the first 2 sections of return data
-    size_t total_huff=0;
-    for(size_t n=0;n<256;n++){
-        total_huff+=hufftable[n].size;
-    }
-    SerialData<u64> retdata(256,total_huff/8+1,data.size);
-    retdata.meta<0>()=data.size;
-    bloc s0=retdata.section(0);
-    bitstream bs1(retdata.section(1));
+    //serialize hufftree
+    bitstream serialhuff(bloc(1000));
+    root->serialize(serialhuff);
 
-    for(int n=0;n<256;n++){
-        s0[n]=hufftable[n].size;
-        bs1.push(hufftable[n]);
-    }
+    //create return data
+    SerialData<u64> retdata(serialhuff.byte+1,data.size);
+    retdata.meta<0>()=data.size;
+    retdata.section(0).copy(serialhuff.home);
 
     //compress the data
-    bitstream ret(retdata.section(2));
+    bitstream ret(retdata.section(1));
     for(size_t n=0;n<data.size;n++){
         ret.push(hufftable[data[n]]);
     }
@@ -165,10 +207,25 @@ bloc HuffmanEncoder::encode(bloc data){
         hufftable[n].home.destroy();
     }
     delete [] hufftable;
+    serialhuff.home.destroy();
 
     return retdata.as_bloc();
 }
 
 bloc HuffmanEncoder::decode(bloc data){
-    return bloc::copy_of(data);
+    SerialData<u64> indata(data);
+
+    bitstream s_huff(indata.section(0));
+    huffnode* hufftree=huffnode::deserialize(s_huff);
+
+    bloc ret(indata.meta<0>());
+    bitstream comp(indata.section(1));
+
+    for(size_t n=0;n<ret.size;n++){
+        ret[n]=hufftree->get(comp);
+    }
+
+    hufftree->destroy();
+
+    return ret;
 }
