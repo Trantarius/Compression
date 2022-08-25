@@ -1,5 +1,5 @@
 #pragma once
-#include "../Util/util.hpp"
+#include "Util/util.hpp"
 #include "encoder.hpp"
 
 struct RunLenEncoder:public Encoder{

@@ -1,5 +1,5 @@
 #pragma once
-#include "../Util/util.hpp"
+#include "Util/util.hpp"
 
 struct Encoder{
     virtual bloc encode(bloc a)=0;
