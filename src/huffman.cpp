@@ -20,18 +20,25 @@ struct bitstream{
     }
 
     bool pop(){
-        bool ret=(home[byte]<<bit)&128;
+        bool ret=(home[byte]>>bit)&1;
         next();
         return ret;
     }
     void set(bool b){
-        home[byte] ^= (-b ^ home[byte]) & (1UL << (7-bit));
+        home[byte] ^= (-b ^ home[byte]) & (1UL << (bit));
         //home[byte]^=((home[byte]<<bit)&128 ^ ((uchar)b<<7))>>bit;
     }
     void push(bool b){
-        home[byte] ^= (-b ^ home[byte]) & (1UL << (7-bit));
+        home[byte] ^= (-b ^ home[byte]) & (1UL << (bit));
         //home[byte]^=((home[byte]<<bit)&128 ^ ((uchar)b<<7))>>bit;
         next();
+    }
+    void push(u8 b){
+        home[byte] = home[byte]&((1<<bit)-1) | b<<bit;
+        u8 tmp=bit;
+        next(8-bit);
+        home[byte]=b>>tmp;
+        next(8-tmp);
     }
     void push(bitstream bs){
         for(size_t n=0;n<bs.size;n++){
