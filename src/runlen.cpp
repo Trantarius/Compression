@@ -1,10 +1,10 @@
 #include "compressors.hpp"
 #include "serial.hpp"
 
-bloc RunLenEncoder::encode(bloc data){
+buffer RunLenEncoder::encode(buffer data){
     SerialData<bool,u64> compdata(data.size);
     compdata.meta<1>()=data.size;//uncompressed size, may differ from SerialData's own size record
-    bloc comp=compdata.section(0);
+    buffer comp=compdata.section(0);
 
     size_t r_i=0;
     for(size_t d_i=0;d_i<data.size;d_i++){
@@ -34,23 +34,23 @@ bloc RunLenEncoder::encode(bloc data){
         //compression failed, just copy instead
         compdata.meta<0>()=false;
         memcpy(comp.ptr,data.ptr,data.size);
-        return compdata.as_bloc();
+        return compdata.as_buffer();
     }
 
     compdata.meta<0>()=true;
     compdata.shrink(data.size-r_i);
-    return compdata.as_bloc();
+    return compdata.as_buffer();
 }
 
-bloc RunLenEncoder::decode(bloc data){
+buffer RunLenEncoder::decode(buffer data){
     SerialData<bool,u64> compdata(data);
     if(!compdata.meta<0>()){
         //data is actually uncompressed
-        return bloc::copy_of(compdata.section(0));
+        return buffer::copy_of(compdata.section(0));
     }
 
-    bloc ret(compdata.meta<1>());
-    bloc comp = compdata.section(0);
+    buffer ret(compdata.meta<1>());
+    buffer comp = compdata.section(0);
 
     size_t r_i=0;
     for(size_t c_i=0;c_i<comp.size;c_i++){

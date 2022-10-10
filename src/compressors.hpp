@@ -1,13 +1,13 @@
 #pragma once
-#include "Util/util.hpp"
+#include "buffer.hpp"
 #include "encoder.hpp"
 
 struct RunLenEncoder:public Encoder{
-    bloc encode(bloc data);
-    bloc decode(bloc data);
+    buffer encode(buffer data);
+    buffer decode(buffer data);
 };
 
 struct HuffmanEncoder:public Encoder{
-    bloc encode(bloc data);
-    bloc decode(bloc data);
+    buffer encode(buffer data);
+    buffer decode(buffer data);
 };

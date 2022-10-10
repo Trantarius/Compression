@@ -2,12 +2,12 @@
 #include "compressors.hpp"
 #include "serial.hpp"
 struct bitstream{
-    bloc home;
+    buffer home;
     size_t size;//in bits
     size_t byte=0;
     uchar bit=0;
     bitstream(){}
-    bitstream(bloc home):home(home),size(home.size*8){}
+    bitstream(buffer home):home(home),size(home.size*8){}
 
     void next(size_t n=1){
         bit+=n;
@@ -92,7 +92,7 @@ struct huffnode{
             child[1]->serialize(target);
         }else{
             target.push(true);
-            target.push(bitstream(bloc(&byte,1)));
+            target.push(bitstream(buffer(&byte,1)));
         }
     }
 
@@ -100,7 +100,7 @@ struct huffnode{
         if(source.pop()){//ie, next node is a leaf
             huffnode* ret=new huffnode();
             ret->delete_leaf=true;
-            bitstream(bloc(&(ret->byte),1)).push(source,8);
+            bitstream(buffer(&(ret->byte),1)).push(source,8);
             source.next(8);
             return ret;
         }else{//ie, next node is a stem
@@ -129,9 +129,9 @@ void flatten_hufftree_r(bitstream* target,huffnode* root,bitstream tracker){
 bitstream* flatten_hufftree(huffnode* root){
     bitstream* target=new bitstream[256];
     for(int n=0;n<256;n++){
-        target[n].home=bloc(32);
+        target[n].home=buffer(32);
     }
-    bitstream tracker(bloc(32));
+    bitstream tracker(buffer(32));
     tracker.set(0);
     flatten_hufftree_r(target,root->child[0],tracker);
     tracker.set(1);
@@ -142,11 +142,11 @@ bitstream* flatten_hufftree(huffnode* root){
 
 u64 hash_hufftree(huffnode* tree){
     bitstream* flat=flatten_hufftree(tree);
-    bitstream tmp(bloc(1000));
+    bitstream tmp(buffer(1000));
     for(int n=0;n<256;n++){
         tmp.push(flat[n]);
     }
-    bloc small(tmp.home.ptr,tmp.byte);
+    buffer small(tmp.home.ptr,tmp.byte);
     u64 ret=small.hash();
     tmp.home.destroy();
     for(int n=0;n<256;n++){
@@ -156,7 +156,7 @@ u64 hash_hufftree(huffnode* tree){
     return ret;
 }
 
-bloc HuffmanEncoder::encode(bloc data){
+buffer HuffmanEncoder::encode(buffer data){
     //get frequency data on each byte
     huffnode nodes[256];
     std::list<huffnode*> nodelist;
@@ -193,7 +193,7 @@ bloc HuffmanEncoder::encode(bloc data){
     bitstream* hufftable=flatten_hufftree(root);
 
     //serialize hufftree
-    bitstream serialhuff(bloc(1000));
+    bitstream serialhuff(buffer(1000));
     root->serialize(serialhuff);
 
     //create return data
@@ -216,16 +216,16 @@ bloc HuffmanEncoder::encode(bloc data){
     delete [] hufftable;
     serialhuff.home.destroy();
 
-    return retdata.as_bloc();
+    return retdata.as_buffer();
 }
 
-bloc HuffmanEncoder::decode(bloc data){
+buffer HuffmanEncoder::decode(buffer data){
     SerialData<u64> indata(data);
 
     bitstream s_huff(indata.section(0));
     huffnode* hufftree=huffnode::deserialize(s_huff);
 
-    bloc ret(indata.meta<0>());
+    buffer ret(indata.meta<0>());
     bitstream comp(indata.section(1));
 
     for(size_t n=0;n<ret.size;n++){

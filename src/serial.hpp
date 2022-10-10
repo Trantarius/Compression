@@ -1,12 +1,12 @@
 #pragma once
-#include "../Util/util.hpp"
+#include "buffer.hpp"
 #include <tuple>
 #include <stdexcept>
 
 
 template<typename...META_Ts>
 class SerialData{
-    bloc data;
+    buffer data;
     /*
      * internal format is:
      * u64:total size
@@ -38,7 +38,7 @@ public:
         u64 s_dat_size=sizeof(u64)*(sizeof...(sizes)+2);
         u64 s_size=(a+...+sizes);
         u64 tot_size=sizeof(u64)+m_size+s_dat_size+s_size;
-        data=bloc(tot_size);
+        data=buffer(tot_size);
 
         u8* run=&data;
         *(u64*)run=tot_size;
@@ -68,7 +68,7 @@ public:
             throw std::runtime_error("invalid serial data; data size larger than max_size");
         }
         u8* run=(u8*)dat;
-        data=bloc(run,*(u64*)dat);
+        data=buffer(run,*(u64*)dat);
         run+=sizeof(u64);
 
         total_meta_size=(u64*)run;
@@ -98,7 +98,7 @@ public:
         }
         sections_start=run;
     }
-    SerialData(bloc dat):SerialData(dat.ptr,dat.size){}
+    SerialData(buffer dat):SerialData(dat.ptr,dat.size){}
 
     template<size_t N>
     typename std::remove_pointer<typename std::tuple_element<N,decltype(metaptrs)>::type>::type& meta(){
@@ -110,12 +110,12 @@ public:
     size_t total_size() {return data.size;}
     size_t section_size(size_t n) {return section_sizes[n];}
 
-    bloc section(size_t n){
+    buffer section(size_t n){
         size_t off=0;
         for(size_t i=0;i<n;i++){
             off+=section_sizes[i];
         }
-        return bloc(sections_start+off,section_sizes[n]);
+        return buffer(sections_start+off,section_sizes[n]);
     }
 
     void shrink(size_t amnt){
@@ -124,7 +124,7 @@ public:
         *(u64*)(data.ptr)-=amnt;
     }
 
-    bloc as_bloc(){
+    buffer as_buffer(){
         return data;
     }
 

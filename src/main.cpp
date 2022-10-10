@@ -16,7 +16,7 @@ int main(){
         if(file.is_regular_file()){
 
             timer.start();
-            bloc sample=readfile(file.path());
+            buffer sample=readfile(file.path());
             double t=timer.stop();
 
             print(file.path().c_str());
@@ -27,7 +27,7 @@ int main(){
             print();
 
             timer.start();
-            bloc comp=enc->encode(sample);
+            buffer comp=enc->encode(sample);
             t=timer.stop();
 
             print("\t",size_format(comp.size));
@@ -36,7 +36,7 @@ int main(){
             print();
 
             timer.start();
-            bloc decomp=enc->decode(comp);
+            buffer decomp=enc->decode(comp);
             t=timer.stop();
 
             print("\t",size_format(decomp.size));
